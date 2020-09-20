@@ -1,12 +1,14 @@
 T = require('luaunit')
-Lsys = dofile('lsys.lua')
+lsys = dofile('lsys.lua')
+
+System = lsys.System
 
 function test_empty_new()
-  T.assertNotNil(Lsys.new{})
+  T.assertNotNil(System{})
 end
 
 function test_rule_init()
-  local l = Lsys.new{
+  local l = System{
     {'a', 'ab'},
     {'b', 'a'},
   }
@@ -15,7 +17,7 @@ function test_rule_init()
 end
 
 function test_rule_define()
-  local l = Lsys.new{}
+  local l = System{}
   l:define_rule("a", "ab")
   l:define_rule("b", "a")
   T.assertEquals(l:successor('a'), 'ab')
@@ -23,12 +25,12 @@ function test_rule_define()
 end
 
 function test_rule_define_validate()
-  local l = Lsys.new{}
+  local l = System{}
   T.assertError(l.define_rule, l, 'ab', 'c')
 end
 
 function test_successor_identity_rule()
-  local l = Lsys.new{
+  local l = System{
     {'a', 'abc'}
   }
   T.assertEquals(l:successor('b'), 'b')
@@ -36,12 +38,12 @@ function test_successor_identity_rule()
 end
 
 function test_successor_not_in_alphabet_error()
-  local l = Lsys.new{}
+  local l = System{}
   T.assertError(l.successor, l, 'a')
 end
 
 function test_alphabet()
-  local l = Lsys.new{}
+  local l = System{}
   -- empty case
   T.assertEquals(l:alphabet(), '')
   T.assertEquals(l:alphabet(true), {})
@@ -53,53 +55,64 @@ function test_alphabet()
   T.assertEquals(l:alphabet(true), {'a', 'b', 'c', 'd', 'e'})
 end
 
-function test_generate_identity()
-  local l = Lsys.new{
+function test_iterate_identity()
+  local l = System{
     {'a', 'ab'}
   }
-  T.assertEquals(l:generate('b', 1), 'b')
+  T.assertEquals(l:iterate('b', 1), 'b')
 end
 
-function test_generate_iter_single_rule()
-  local l = Lsys.new{
+function test_iterate_iter_single_rule()
+  local l = System{
     {'a', 'ab'}
   }
-  T.assertEquals(l:generate('a', 1), 'ab')
-  T.assertEquals(l:generate('a', 2), 'abb')
-  T.assertEquals(l:generate('a', 3), 'abbb')
+  T.assertEquals(l:iterate('a', 1), 'ab')
+  T.assertEquals(l:iterate('a', 2), 'abb')
+  T.assertEquals(l:iterate('a', 3), 'abbb')
   -- expanded
-  T.assertEquals(l:generate('a', 2, true), {'a', 'b', 'b'})
+  T.assertEquals(l:iterate('a', 2, true), {'a', 'b', 'b'})
 end
 
-function test_generate_algae()
+function test_iterate_algae()
   -- algae example
-  local l = Lsys.new{
+  local l = System{
     {'a', 'ab'},
     {'b', 'a'},
   }
-  T.assertEquals(l:generate('a', 5), 'abaababaabaab')
+  T.assertEquals(l:iterate('a', 5), 'abaababaabaab')
 end
 
-function test_generate_fractal()
-  local l = Lsys.new{
+function test_iterate_fractal()
+  local l = System{
     {'1', '11'},
     {'0', '1[0]0'},
   }
-  T.assertEquals(l:generate('0', 3), '1111[11[1[0]0]1[0]0]11[1[0]0]1[0]0')
+  T.assertEquals(l:iterate('0', 3), '1111[11[1[0]0]1[0]0]11[1[0]0]1[0]0')
 end
 
-function test_generate_implicit_iteration()
-  local l = Lsys.new{
+function test_iterate_implicit_n()
+  local l = System{
     {'a', 'bc'},
   }
-  T.assertEquals(l:generate('a'), 'bc')
+  T.assertEquals(l:iterate('a'), 'bc')
 end
 
-function test_generate_compound_axiom()
-  local l = Lsys.new{
+function test_iterate_compound_axiom()
+  local l = System{
     {'a', 'bc'},
   }
-  T.assertEquals(l:generate('dac'), 'dbcc')
+  T.assertEquals(l:iterate('dac'), 'dbcc')
+end
+
+function test_to_axiom()
+  -- empty
+  T.assertEquals(lsys.to_axiom(), {})
+  -- expand
+  T.assertEquals(lsys.to_axiom('a'), {'a'})
+  T.assertEquals(lsys.to_axiom('abc'), {'a', 'b', 'c'})
+  -- identity
+  T.assertEquals(lsys.to_axiom({}), {})
+  T.assertEquals(lsys.to_axiom({'x', 'y'}), {'x', 'y'})
 end
 
 os.exit(T.LuaUnit.run())

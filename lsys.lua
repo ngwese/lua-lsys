@@ -22,6 +22,18 @@ local function str_explode(str)
   return t
 end
 
+local function to_axiom(thing)
+  if type(thing) == 'string' then
+    return str_explode(thing)
+  end
+  return thing or {}
+end
+
+local function to_result(v, expanded)
+  if expanded then return v end
+  return table.concat(v, '')
+end
+
 local function table_extend(t, e)
   for _, v in ipairs(e) do
     table.insert(t, v)
@@ -29,11 +41,11 @@ local function table_extend(t, e)
 end
 
 ---
---- Lsys
+--- System
 ---
 
-local Lsys = {}
-Lsys.__index = Lsys
+local System = {}
+System.__index = System
 
 --- Create a L-system object.
 --
@@ -44,12 +56,12 @@ Lsys.__index = Lsys
 --
 -- @tparam table rules Zero or more rules
 --
--- @treturn Lsys instance.
-function Lsys.new(rules)
-  local this = setmetatable({}, Lsys)
+-- @treturn System instance.
+function System.new(rules)
+  local this = setmetatable({}, System)
   this._rules = {}
   this._alphabet = {}
-  for i, r in ipairs(rules) do
+  for i, r in ipairs(rules or {}) do
     this:define_rule(r[1], r[2])
   end
   return this
@@ -59,7 +71,7 @@ end
 --
 -- @tparam string predecessor
 -- @tparam string sucessor
-function Lsys:define_rule(predecessor, successor)
+function System:define_rule(predecessor, successor)
   -- validate
   if #predecessor ~= 1 then
     error('predecessor must be a single character string')
@@ -78,14 +90,13 @@ end
 
 -- Returns the set of characters present within the rules
 -- @tparam boolean expanded Return table instead of string
-function Lsys:alphabet(expanded)
+function System:alphabet(expanded)
   local t = {}
   for k, v in pairs(self._alphabet) do
     table.insert(t, k)
   end
   table.sort(t)
-  if expanded then return t end
-  return table.concat(t)
+  return to_result(t, expanded)
 end
 
 -- Returns the successor for the given predecessor
@@ -97,7 +108,7 @@ end
 --
 -- @tparam string predecessor
 -- @tparam boolean expanded Return table instead of string
-function Lsys:successor(predecessor, expanded)
+function System:successor(predecessor, expanded)
   local r = self._rules[predecessor]
   if not r and self._alphabet[predecessor] then
     r = { predecessor }
@@ -107,33 +118,23 @@ function Lsys:successor(predecessor, expanded)
     error("predecessor '" .. predecessor .. "' is not in alphabet")
   end
 
-  if expanded then return r end
-  return table.concat(r, '')
+  return to_result(r, expanded)
 end
 
--- Generate by iteratively applying rules to axiom
+-- Iteratively apply rules to axiom
 --
 -- Axiom is a string of one or more characters from the alphabet.
 --
 -- @tparam string axiom Starting state
 -- @tparam number n Iterations, defaults to 1
 -- @tparam boolean expanded Return table instead of string
-function Lsys:generate(axiom, n, expanded)
+function System:iterate(axiom, n, expanded)
   local n = n or 1
-
-  local v = nil
-  if #axiom > 1 then
-    v = str_explode(axiom)
-  else
-    v = { axiom }
-  end
+  local v = to_axiom(axiom)
 
   for i = 1, n do v = self:apply(v) end
 
-  if not expanded then
-    return table.concat(v, '')
-  end
-  return v
+  return to_result(v, expanded)
 end
 
 -- Apply one generation of substitution
@@ -142,7 +143,7 @@ end
 --
 -- @tparam table at Axiom table (symbols from the alphabet)
 -- @treturn table
-function Lsys:apply(at)
+function System:apply(at)
   local v = {}
   for _, c in ipairs(at) do
     local r = self._rules[c]
@@ -151,5 +152,8 @@ function Lsys:apply(at)
   return v
 end
 
-return Lsys
+return {
+  System = System.new,
+  to_axiom = to_axiom,
+}
 
