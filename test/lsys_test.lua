@@ -12,20 +12,21 @@ function test_rule_init()
     {'a', 'ab'},
     {'b', 'a'},
   }
-  T.assertEquals(l:successor('a'), 'ab')
-  T.assertEquals(l:successor('b'), 'a')
+  T.assertEquals(l:successor('a')(), {'a', 'b'})
+  T.assertEquals(l:successor('b')(), {'a'})
 end
 
 function test_rule_define()
   local l = System{}
   l:define_rule("a", "ab")
   l:define_rule("b", "a")
-  T.assertEquals(l:successor('a'), 'ab')
-  T.assertEquals(l:successor('b'), 'a')
+  T.assertEquals(l:successor('a')(), {'a', 'b'})
+  T.assertEquals(l:successor('b')(), {'a'})
 end
 
 function test_rule_define_validate()
   local l = System{}
+  -- ensure single-character predecessor
   T.assertError(l.define_rule, l, 'ab', 'c')
 end
 
@@ -33,8 +34,8 @@ function test_successor_identity_rule()
   local l = System{
     {'a', 'abc'}
   }
-  T.assertEquals(l:successor('b'), 'b')
-  T.assertEquals(l:successor('c'), 'c')
+  T.assertEquals(l:successor('b')(), {'b'})
+  T.assertEquals(l:successor('c')(), {'c'})
 end
 
 function test_successor_not_in_alphabet_error()
@@ -45,32 +46,30 @@ end
 function test_alphabet()
   local l = System{}
   -- empty case
-  T.assertEquals(l:alphabet(), '')
-  T.assertEquals(l:alphabet(true), {})
+  T.assertEquals(l:alphabet(), {})
   -- full
   l:define_rule('a', 'ab')
   l:define_rule('b', 'cde')
   l:define_rule('c', 'ba')
-  T.assertEquals(l:alphabet(), 'abcde')
-  T.assertEquals(l:alphabet(true), {'a', 'b', 'c', 'd', 'e'})
+  T.assertEquals(l:alphabet(), {'a', 'b', 'c', 'd', 'e'})
 end
 
 function test_iterate_identity()
   local l = System{
     {'a', 'ab'}
   }
-  T.assertEquals(l:iterate('b', 1), 'b')
+  T.assertEquals(l:iterate('b', 1), {'b'})
 end
 
 function test_iterate_iter_single_rule()
   local l = System{
     {'a', 'ab'}
   }
-  T.assertEquals(l:iterate('a', 1), 'ab')
-  T.assertEquals(l:iterate('a', 2), 'abb')
-  T.assertEquals(l:iterate('a', 3), 'abbb')
+  T.assertEquals(tostring(l:iterate('a', 1)), 'ab')
+  T.assertEquals(tostring(l:iterate('a', 2)), 'abb')
+  T.assertEquals(tostring(l:iterate('a', 3)), 'abbb')
   -- expanded
-  T.assertEquals(l:iterate('a', 2, true), {'a', 'b', 'b'})
+  T.assertEquals(l:iterate('a', 2), {'a', 'b', 'b'})
 end
 
 function test_iterate_algae()
@@ -79,7 +78,7 @@ function test_iterate_algae()
     {'a', 'ab'},
     {'b', 'a'},
   }
-  T.assertEquals(l:iterate('a', 5), 'abaababaabaab')
+  T.assertEquals(tostring(l:iterate('a', 5)), 'abaababaabaab')
 end
 
 function test_iterate_fractal()
@@ -87,21 +86,21 @@ function test_iterate_fractal()
     {'1', '11'},
     {'0', '1[0]0'},
   }
-  T.assertEquals(l:iterate('0', 3), '1111[11[1[0]0]1[0]0]11[1[0]0]1[0]0')
+  T.assertEquals(tostring(l:iterate('0', 3)), '1111[11[1[0]0]1[0]0]11[1[0]0]1[0]0')
 end
 
 function test_iterate_implicit_n()
   local l = System{
     {'a', 'bc'},
   }
-  T.assertEquals(l:iterate('a'), 'bc')
+  T.assertEquals(tostring(l:iterate('a')), 'bc')
 end
 
 function test_iterate_compound_axiom()
   local l = System{
     {'a', 'bc'},
   }
-  T.assertEquals(l:iterate('dac'), 'dbcc')
+  T.assertEquals(tostring(l:iterate('dac')), 'dbcc')
 end
 
 function test_to_axiom()
